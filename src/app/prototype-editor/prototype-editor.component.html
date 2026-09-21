@@ -1,0 +1,46 @@
+<div class="prototype-editor-widget p-16">
+  <h4 class="m-t-0">AI Prototype Editor</h4>
+  <p class="text-muted">Create an AI-assisted prototype for a microservice.</p>
+  <button type="button" class="btn btn-primary" (click)="openEditor()">
+    Open editor
+  </button>
+</div>
+
+<dialog
+  #editorDialog
+  class="modal-content p-16"
+  style="width: min(720px, 90vw)"
+>
+  <div class="modal-header">
+    <h4 class="modal-title">Prototype Editor</h4>
+  </div>
+  <div class="modal-body p-0 p-t-16">
+    <label for="prototype-prompt" class="c8y-label">Prototype prompt</label>
+    <textarea
+      id="prototype-prompt"
+      class="form-control"
+      rows="12"
+      [(ngModel)]="prompt"
+      [disabled]="isSaving"
+      placeholder="Describe the microservice prototype you want to create..."
+    ></textarea>
+  </div>
+  <div class="modal-footer p-x-0 p-b-0">
+    <button
+      type="button"
+      class="btn btn-default"
+      (click)="closeEditor()"
+      [disabled]="isSaving"
+    >
+      Cancel
+    </button>
+    <button
+      type="button"
+      class="btn btn-primary"
+      (click)="save()"
+      [disabled]="!prompt.trim() || isSaving"
+    >
+      {{ isSaving ? "Creating..." : "Create prototype" }}
+    </button>
+  </div>
+</dialog>
