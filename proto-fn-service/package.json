@@ -16,9 +16,11 @@
     "roles": "c8y-nitro roles"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "c8y-nitro": "^0.10.0",
     "nitro": "3.0.260903-beta",
-    "run": "^2.1.4"
+    "run": "^2.1.4",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@types/node": "^24.13.6",
