@@ -5,27 +5,27 @@ export default {
   runTime: {
     description,
     version,
-    name: 'Dashboard Generator plugin',
+    name: 'Prototype Editor plugin',
     contentSecurityPolicy:
       "base-uri 'none'; default-src 'self' 'unsafe-inline' http: https: ws: wss:; connect-src 'self' http: https: ws: wss:;  script-src 'self' *.bugherd.com *.twitter.com *.twimg.com *.aptrinsic.com 'unsafe-inline' 'unsafe-eval' data:; style-src * 'unsafe-inline' blob:; img-src * data: blob:; font-src * data:; frame-src *; worker-src 'self' blob:;",
     dynamicOptionsUrl: true,
     remotes: {
-      'dashboard-generator': ['DashboardGeneratorModule'],
+      'prototype-editor': ['PrototypeEditorModule'],
     },
-    contextPath: 'dashboard-generator-plugin',
-    key: 'dashboard-generator-plugin-application-key',
+    contextPath: 'prototype-editor-plugin',
+    key: 'prototype-editor-plugin-application-key',
     package: 'plugin',
     isPackage: true,
     noAppSwitcher: true,
     license: 'MIT',
     exports: [
       {
-        name: 'Dashboard Generator plugin',
-        module: 'DashboardGeneratorModule',
-        path: './src/app/dashboard-generator/dashboard-generator.module.ts',
+        name: 'Prototype Editor plugin',
+        module: 'PrototypeEditorModule',
+        path: './src/app/prototype-editor/prototype-editor.module.ts',
         readmePath: './README.md',
         description:
-          'Adds a page to the device in Cockpit and DeviceManagement to easily start a VPN connection',
+          'Adds the Prototype Editor to device pages in Cockpit and Device Management.',
       },
     ],
   },
@@ -43,7 +43,6 @@ export default {
       '@angular/upgrade',
       '@c8y/client',
       '@c8y/ngx-components',
-      'ngx-bootstrap',
       '@ngx-translate/core',
       '@ngx-formly/core',
     ],

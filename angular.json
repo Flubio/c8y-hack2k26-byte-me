@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "dashboard-generator-plugin": {
+    "prototype-editor-plugin": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -17,7 +17,7 @@
         "build": {
           "builder": "@c8y/devkit:build",
           "options": {
-            "outputPath": "dist/dashboard-generator-plugin",
+            "outputPath": "dist/prototype-editor-plugin",
             "polyfills": [
               "zone.js"
             ],
@@ -30,7 +30,7 @@
               }
             ],
             "styles": [
-              "@c8y/style/main.less",
+              "@c8y/style/main.scss",
               "src/styles.less"
             ],
             "scripts": [],
@@ -73,10 +73,10 @@
           "builder": "@c8y/devkit:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "dashboard-generator-plugin:build:production"
+              "buildTarget": "prototype-editor-plugin:build:production"
             },
             "development": {
-              "buildTarget": "dashboard-generator-plugin:build:development"
+              "buildTarget": "prototype-editor-plugin:build:development"
             }
           },
           "defaultConfiguration": "development"
@@ -100,7 +100,7 @@
               }
             ],
             "styles": [
-              "@c8y/style/main.less",
+              "@c8y/style/main.scss",
               "src/styles.less"
             ],
             "scripts": []
@@ -110,10 +110,10 @@
           "builder": "@c8y/devkit:deploy",
           "configurations": {
             "production": {
-              "buildTarget": "dashboard-generator-plugin:build:production"
+              "buildTarget": "prototype-editor-plugin:build:production"
             },
             "development": {
-              "buildTarget": "dashboard-generator-plugin:build:development"
+              "buildTarget": "prototype-editor-plugin:build:development"
             }
           },
           "defaultConfiguration": "production"
