@@ -1,0 +1,19 @@
+{
+  "extends": "nitro/tsconfig",
+  "include": ["**/*", "node_modules/.c8y-nitro/*.d.ts"],
+  "compilerOptions": {
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "strict": true,
+    "useUnknownInCatchVariables": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
+    "noEmit": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "target": "ESNext",
+    "skipLibCheck": true
+  }
+}
