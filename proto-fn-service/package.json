@@ -1,0 +1,34 @@
+{
+  "name": "proto-fn-service",
+  "version": "0.0.4",
+  "description": "Cumulocity microservice that runs agent-written functions in a QuickJS sandbox",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nitro build",
+    "release": "npm version patch --no-git-tag-version && nitro build",
+    "dev": "nitro dev",
+    "preview": "npx srvx --prod .output/",
+    "typecheck": "tsc --noEmit",
+    "typegen": "c8y-nitro typegen",
+    "test": "node --test test/*.test.ts",
+    "bootstrap": "c8y-nitro bootstrap",
+    "roles": "c8y-nitro roles"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "c8y-nitro": "^0.10.0",
+    "nitro": "3.0.260903-beta",
+    "run": "^2.1.4",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.6",
+    "rolldown": "^1.2.7",
+    "typescript": "^6.0.3"
+  },
+  "author": {
+    "name": "Matthias Lüft",
+    "email": "flubio@flubio.de"
+  }
+}

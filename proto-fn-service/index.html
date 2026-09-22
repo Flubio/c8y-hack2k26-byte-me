@@ -1,0 +1,21 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>proto-fn-service</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{font:16px system-ui;max-width:40rem;margin:2rem auto;padding:0 1rem}li{margin:.4rem 0}code{background:#eee;padding:0 .3em;border-radius:3px}</style>
+<h1>proto-fn-service</h1>
+<p>Deployed functions (<code>POST functions</code> to add one):</p>
+<ul id="fns">Loading…</ul>
+<script>
+  // relative URLs: works both on localhost and behind /service/<contextPath>/
+  fetch('functions').then(r => r.ok ? r.json() : Promise.reject(r.status)).then(fns => {
+    const ul = document.getElementById('fns')
+    ul.textContent = fns.length ? '' : 'None yet.'
+    for (const f of fns) {
+      const li = document.createElement('li')
+      const a = Object.assign(document.createElement('a'), { href: `run/${f.slug}`, textContent: f.slug })
+      li.append(a, ` v${f.version}${f.description ? ' – ' + f.description : ''}`)
+      ul.append(li)
+    }
+  }).catch(e => { document.getElementById('fns').textContent = `Could not load functions (${e})` })
+</script>
