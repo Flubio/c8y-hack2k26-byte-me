@@ -1,4 +1,5 @@
 import { Component, ElementRef, ViewChild } from "@angular/core";
+import { NgFor } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { AlertService } from "@c8y/ngx-components";
 import { PrototypeEditorService } from "./prototype-editor.service";
@@ -6,13 +7,20 @@ import { PrototypeEditorService } from "./prototype-editor.service";
 @Component({
   selector: "t3k-prototype-editor",
   templateUrl: "./prototype-editor.component.html",
-  imports: [FormsModule],
+  styleUrl: "./prototype-editor.component.less",
+  imports: [FormsModule, NgFor],
 })
 export class PrototypeEditorComponent {
   @ViewChild("editorDialog") editorDialog!: ElementRef<HTMLDialogElement>;
 
   prompt = "";
   isSaving = false;
+
+  readonly promptSuggestions = [
+    "Create a device health microservice with an HTTP endpoint and status checks.",
+    "Build a data processor that validates incoming measurements and reports errors.",
+    "Create a scheduled service that summarizes daily device activity.",
+  ];
 
   constructor(
     private prototypeEditorService: PrototypeEditorService,
@@ -21,6 +29,18 @@ export class PrototypeEditorComponent {
 
   openEditor() {
     this.editorDialog.nativeElement.showModal();
+  }
+
+  useSuggestion(suggestion: string) {
+    if (!this.isSaving) {
+      this.prompt = suggestion;
+    }
+  }
+
+  handleDialogClick(event: MouseEvent) {
+    if (event.target === this.editorDialog.nativeElement && !this.isSaving) {
+      this.closeEditor();
+    }
   }
 
   async save() {
