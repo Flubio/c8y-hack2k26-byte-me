@@ -1,6 +1,6 @@
 {
   "name": "prototype-editor",
-  "version": "1.0.0",
+  "version": "1.0.6",
   "keywords": [
     "Cumulocity",
     "AI"
@@ -29,6 +29,7 @@
     "@c8y/client": "1024.18.1",
     "@c8y/ngx-components": "1024.18.1",
     "@c8y/style": "1024.18.1",
+    "marked": "^18.0.14",
     "rxjs": "7.8.2",
     "tslib": "^2.8.1",
     "zone.js": "~0.16.3"
