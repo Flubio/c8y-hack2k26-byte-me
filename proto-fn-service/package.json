@@ -1,6 +1,6 @@
 {
   "name": "proto-fn-service",
-  "version": "0.0.4",
+  "version": "0.0.6",
   "description": "Cumulocity microservice that runs agent-written functions in a QuickJS sandbox",
   "private": true,
   "type": "module",

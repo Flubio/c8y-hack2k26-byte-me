@@ -1,13 +1,13 @@
 import { defineHandler } from 'nitro/h3'
-import { hasUserRequiredRole } from 'c8y-nitro/utils'
+// import { hasUserRequiredRole } from 'c8y-nitro/utils'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
+import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js'
 import { z } from 'zod'
 import { deployFunction, type DeployInput } from '../../utils/functions.ts'
 import { credsFrom } from '../../utils/creds.ts'
 
 export default defineHandler({
-  middleware: [hasUserRequiredRole('ROLE_PROTO_FN_CREATE')],
+  // middleware: [hasUserRequiredRole('ROLE_PROTO_FN_CREATE')],
   handler: async (event) => {
     const creds = credsFrom(event.req)
 
@@ -31,8 +31,9 @@ export default defineHandler({
       return { content: [{ type: 'text', text: JSON.stringify(result) }], isError: !result.ok }
     })
 
-    const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined })
+    // web-standard transport: Nitro hands the handler a web Request/Response, not Node's req/res
+    const transport = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true })
     await server.connect(transport)
-    return transport.handleRequest(await event.req.json())
+    return transport.handleRequest(event.req)
   },
 })

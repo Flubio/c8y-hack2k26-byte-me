@@ -1,0 +1,31 @@
+name: Build frontend
+
+on:
+  push:
+    branches: [main]
+    paths: ['proto-fn-service-frontend/**']
+  pull_request:
+    paths: ['proto-fn-service-frontend/**']
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: proto-fn-service-frontend
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: proto-fn-service-frontend/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: prototype-editor-plugin
+          path: proto-fn-service-frontend/dist/prototype-editor-plugin/*.zip
+          if-no-files-found: error
