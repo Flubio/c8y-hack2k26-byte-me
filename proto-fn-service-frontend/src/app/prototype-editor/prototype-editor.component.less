@@ -1,5 +1,9 @@
 :host {
   display: block;
+  // Fill whatever height the dashboard grid gives this widget tile - a fixed
+  // min-height here would overflow a small tile and push the input off-screen.
+  height: 100%;
+  min-height: 160px; // floor for contexts with no ancestor-imposed height (e.g. a plain page)
   --ink: #17212b;
   --muted: #63727f;
   --line: #dce5e9;
@@ -7,6 +11,74 @@
   --accent-dark: #056b69;
   --canvas: #f4f8f7;
 }
+
+// The always-visible chat that replaced the prompt-then-modal flow below.
+// Note: .prototype-editor-widget and the .prototype-dialog rules further down are the
+// old hero-card + single-shot prompt UI and are no longer referenced from the template;
+// left in place rather than deleted blind, since a teammate may still want that copy/art.
+.pfn-chat {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: 100%;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--canvas);
+  color: var(--ink);
+  box-sizing: border-box;
+}
+
+.pfn-header { flex-shrink: 0; display: flex; align-items: center; gap: 10px; }
+.pfn-logo { width: 36px; height: auto; object-fit: contain; }
+.pfn-eyebrow { color: var(--accent-dark); font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.pfn-eyebrow-dot { display: inline-block; width: 7px; height: 7px; margin: 0 6px 1px 0; border-radius: 50%; background: #ec9a4b; }
+.pfn-chat h4 { margin: 2px 0 0; font-size: 16px; font-weight: 650; }
+
+.pfn-messages {
+  flex: 1;
+  // The min-height:0 override is what lets a flex child shrink below its content size
+  // instead of overflowing its sibling (the input row) out of view at small tile heights.
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 2px;
+}
+.pfn-empty { color: var(--muted); font-size: 13px; }
+.pfn-message { display: flex; }
+.pfn-message.is-user { justify-content: flex-end; }
+.pfn-bubble {
+  max-width: 85%;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid var(--line);
+  font-size: 13px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.pfn-message.is-user .pfn-bubble { background: var(--accent); border-color: var(--accent); color: #fff; }
+.pfn-bubble-loading { color: var(--muted); font-style: italic; }
+
+// Agent replies are rendered from markdown (see markdown.pipe.ts) via [innerHTML],
+// so style the HTML marked produces instead of relying on white-space:pre-wrap.
+.pfn-markdown {
+  > :first-child { margin-top: 0; }
+  > :last-child { margin-bottom: 0; }
+  p, ul, ol { margin: 0 0 8px; }
+  ul, ol { padding-left: 18px; }
+  code { background: var(--canvas); border-radius: 3px; padding: 1px 4px; font-size: 12px; }
+  pre { background: var(--canvas); border-radius: 4px; padding: 8px; overflow-x: auto; }
+  pre code { background: none; padding: 0; }
+  a { color: var(--accent-dark); }
+}
+
+.pfn-input-row { flex-shrink: 0; display: flex; gap: 8px; align-items: flex-end; }
+.pfn-input-row textarea { flex: 1; resize: vertical; }
+.pfn-widget-btn { flex-shrink: 0; align-self: flex-start; }
 
 .prototype-editor-widget {
   position: relative;
