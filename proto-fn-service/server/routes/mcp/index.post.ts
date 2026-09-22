@@ -56,13 +56,18 @@ export default defineHandler({
       title: 'Add widget code directly to a Cockpit dashboard',
       description:
         'Adds the given widget source (Cumulocity HTML-widget Advanced-mode Lit code - see '
-        + 'generate_widget for the contract and a safe starting point) to a dashboard, so it '
-        + 'appears live without the user pasting anything. Only call this when a dashboard id is '
-        + 'known (the user\'s message may include a "[Context: current Cockpit dashboard id = ...]" '
-        + 'line - use that one unless the user names a different dashboard, or ask for the id if '
-        + 'none is known). BEST-EFFORT: the dashboard-write config shape is unverified against a '
-        + 'live tenant - if it returns ok:true but the tile appears blank or broken on the '
-        + 'dashboard, give the user the code as a fenced block to paste manually instead.',
+        + 'generate_widget for the contract and a safe starting point) to a dashboard in one '
+        + 'step, so it appears live without the user pasting anything. The code must contain '
+        + '`export default class ... extends LitElement`; never call `customElements.define()` '
+        + 'or extend HTMLElement, because Cockpit can evaluate widget modules more than once. '
+        + 'Never call `this.attachShadow()` either: LitElement already creates its shadow root; '
+        + 'use `this.renderRoot` when imperative DOM APIs are necessary. '
+        + 'Only call this when a dashboard id is known (the user\'s message may include a '
+        + '"[Context: current Cockpit dashboard id = ...]" line - use that one unless the user '
+        + 'names a different dashboard, or ask for the id if none is known). BEST-EFFORT: the '
+        + 'dashboard-write config shape is unverified against a live tenant - if it returns '
+        + 'ok:true but the tile appears blank or broken on the dashboard, give the user the code '
+        + 'as a fenced block to paste manually instead.',
       inputSchema: {
         dashboardId: z.string(),
         title: z.string(),

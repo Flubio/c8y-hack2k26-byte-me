@@ -3,6 +3,7 @@ import { test } from 'node:test'
 import { addWidgetToDashboard } from '../server/utils/dashboard.ts'
 
 const creds = { baseUrl: 'http://fake', headers: { authorization: 'Basic xyz' } }
+const validWidgetCode = "import { LitElement } from 'lit'; export default class MyWidget extends LitElement {}"
 
 test('read-modify-write: existing children and dashboard fields survive; only PUTs c8y_Dashboard', async (t) => {
   const existingDashboard = { name: 'My dashboard', icon: 'gauge', children: { 'old-widget': { id: 'old-widget', x: 1, y: 1 } } }
@@ -16,7 +17,7 @@ test('read-modify-write: existing children and dashboard fields survive; only PU
     return new Response(JSON.stringify({ ok: true }), { status: 200 })
   })
 
-  const { widgetId } = await addWidgetToDashboard(creds, 'dash-1', { title: 'my-fn', code: 'export default class {}' })
+  const { widgetId } = await addWidgetToDashboard(creds, 'dash-1', { title: 'my-fn', code: validWidgetCode })
 
   assert.equal(calls.length, 2)
   assert.equal(calls[0]!.method, 'GET')
@@ -28,21 +29,56 @@ test('read-modify-write: existing children and dashboard fields survive; only PU
   assert.equal(putBody.c8y_Dashboard.icon, 'gauge')
   // pre-existing widget survives the merge
   assert.deepEqual(putBody.c8y_Dashboard.children['old-widget'], { id: 'old-widget', x: 1, y: 1 })
-  // new widget was added, keyed by the returned id
-  const added = putBody.c8y_Dashboard.children[widgetId] as { id: string, config: { code: string } }
+  // new widget matches @c8y/ngx-components' real Widget/HtmlWidgetConfig/HtmlWidget shape
+  const added = putBody.c8y_Dashboard.children[widgetId] as {
+    id: string
+    componentId: string
+    title: string
+    _x: number
+    _y: number
+    _width: number
+    _height: number
+    config: { config: { code: string, css: string, legacy: boolean, devMode: boolean, options: { advancedSecurity: boolean } } }
+  }
   assert.equal(added.id, widgetId)
-  assert.equal(added.config.code, 'export default class {}')
+  assert.equal(added.componentId, 'Html widget') // defaultWidgetIds.HTML
+  assert.equal(added.title, 'my-fn')
+  assert.deepEqual([added._x, added._y, added._width, added._height], [0, 0, 4, 4])
+  assert.equal(added.config.config.code, validWidgetCode)
+  assert.equal(added.config.config.legacy, false)
+  assert.equal(added.config.config.devMode, true)
+  assert.equal(added.config.config.options.advancedSecurity, true)
+})
+
+test('rejects custom-element registrations that fail when Cockpit reloads a widget module', async () => {
+  await assert.rejects(
+    () => addWidgetToDashboard(creds, 'dash-1', {
+      title: 'invalid-widget',
+      code: "customElements.define('device-telemetry-widget', class extends HTMLElement {})",
+    }),
+    /must not call customElements\.define/,
+  )
+})
+
+test('rejects manual shadow-root attachment in LitElement widgets', async () => {
+  await assert.rejects(
+    () => addWidgetToDashboard(creds, 'dash-1', {
+      title: 'invalid-widget',
+      code: "import { LitElement } from 'lit'; export default class MyWidget extends LitElement { render() { this.attachShadow({ mode: 'open' }); } }",
+    }),
+    /must not call this\.attachShadow/,
+  )
 })
 
 test('throws a clear error when the target is not a dashboard', async (t) => {
   t.mock.method(globalThis, 'fetch', async () => new Response(JSON.stringify({ id: 'not-a-dashboard' }), { status: 200 }))
   await assert.rejects(
-    () => addWidgetToDashboard(creds, 'not-a-dashboard', { title: 't', code: 'c' }),
+    () => addWidgetToDashboard(creds, 'not-a-dashboard', { title: 't', code: validWidgetCode }),
     /no c8y_Dashboard fragment/,
   )
 })
 
 test('surfaces a non-2xx GET as an error', async (t) => {
   t.mock.method(globalThis, 'fetch', async () => new Response('nope', { status: 404 }))
-  await assert.rejects(() => addWidgetToDashboard(creds, 'missing', { title: 't', code: 'c' }), /HTTP 404/)
+  await assert.rejects(() => addWidgetToDashboard(creds, 'missing', { title: 't', code: validWidgetCode }), /HTTP 404/)
 })

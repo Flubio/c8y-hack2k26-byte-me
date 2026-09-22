@@ -5,6 +5,15 @@
       <div class="pfn-eyebrow"><span class="pfn-eyebrow-dot"></span> Prototype studio</div>
       <h4>Ask for a service</h4>
     </div>
+    <button
+      type="button"
+      class="btn btn-link btn-sm pfn-clear-btn"
+      *ngIf="messages.length > 0"
+      (click)="clearChat()"
+      title="Clear chat history"
+    >
+      Clear
+    </button>
   </div>
 
   <div class="pfn-messages">
@@ -28,12 +37,12 @@
     </button>
   </div>
 
-  <button type="button" class="btn btn-default btn-sm pfn-widget-btn" (click)="openWidgetDialog()">
+  <!-- <button type="button" class="btn btn-default btn-sm pfn-widget-btn" (click)="openWidgetDialog()">
     Create Cockpit widget
-  </button>
+  </button> -->
 </div>
 
-<dialog #widgetDialog class="modal-content p-16" style="width: min(720px, 90vw)">
+<!-- <dialog #widgetDialog class="modal-content p-16" style="width: min(720px, 90vw)">
   <div class="modal-header">
     <h4 class="modal-title">Create Cockpit widget</h4>
   </div>
@@ -73,4 +82,4 @@
       Close
     </button>
   </div>
-</dialog>
+</dialog> -->

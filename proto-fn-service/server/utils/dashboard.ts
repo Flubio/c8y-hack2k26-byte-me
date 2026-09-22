@@ -7,25 +7,36 @@ import type { Creds } from './sandbox.ts'
  * in full, so the *entire* current c8y_Dashboard fragment - not just the new child -
  * has to be sent back).
  *
- * UNVERIFIED, best-effort guess: Cumulocity does not publicly document the JSON shape
- * of a c8y_Dashboard child, and there is no live tenant available here to check it
- * against. The `id`/`x`/`y`/`width`/`height` fields match a working reference tool
- * (https://community.cumulocity.com/t/ai-agent-manager-using-a-mcp-server-to-generate-widgets/14172),
- * whose tool only creates an *empty* widget - the `config` shape below (component id,
- * where the Advanced-mode source and its "advanced" flag live) is this function's own
- * guess, isolated here as the one place to fix once it's checked against a real
- * dashboard: add one Enhanced HTML widget by hand in Cockpit, then
- * GET /inventory/managedObjects/<dashboardId> and diff its c8y_Dashboard.children
- * against WIDGET_CONFIG_SHAPE below.
+ * The child shape below is traced from @c8y/ngx-components' own shipped type
+ * declarations (not a guess against undocumented behaviour):
+ *   ContextDashboard.children: { [id: string]: Widget }                      (context-dashboard.d.ts)
+ *   Widget: { id, componentId, title?, _x, _y, _width, _height, config: any } (c8y-ngx-components.d.ts)
+ *   componentId for the built-in HTML widget = defaultWidgetIds.HTML = "Html widget"
+ *                                                        (widgets/definitions/index)
+ *   Widget.config (for the HTML widget) = HtmlWidgetConfig: { config: HtmlWidget, ... }
+ *   HtmlWidget: { css, code, options: { cssEncapsulation, advancedSecurity }, legacy, devMode }
+ *                                          (widgets/implementations/html-widget)
+ * `code` is the Advanced-mode Lit module source (what generate_widget/buildLitWidget
+ * produces); `legacy: false` + `devMode: true` selects modern web-component
+ * Advanced mode over the normal HTML/legacy renderer.
+ *
+ * Still unverified: this hasn't been run against a live tenant, so runtime-only details
+ * (e.g. whether `devMode`/`cssEncapsulation` need a different value, or the widget needs
+ * to appear in `dashboard.classes`/layout metadata elsewhere) could still be off. If the
+ * tile doesn't render, add one Enhanced HTML widget by hand and diff its
+ * c8y_Dashboard.children entry against WIDGET_CONFIG_SHAPE below.
  */
 const WIDGET_CONFIG_SHAPE = {
-  /** Guessed component identifier for the built-in "HTML" widget type. */
-  componentId: 'html.widget',
-  /** Guessed field names for Advanced-mode source and its toggle. */
-  buildConfig: (title: string, code: string) => ({
-    name: title,
-    advancedMode: true,
-    code,
+  /** defaultWidgetIds.HTML from @c8y/ngx-components/widgets/definitions - verified, not guessed. */
+  componentId: 'Html widget',
+  buildConfig: (code: string) => ({
+    config: {
+      css: '',
+      code,
+      options: { cssEncapsulation: true, advancedSecurity: true },
+      legacy: false,
+      devMode: true,
+    },
   }),
 }
 
@@ -61,7 +72,20 @@ export interface AddWidgetOptions {
   height?: number
 }
 
+function assertAdvancedWidgetModule(code: string): void {
+  if (/customElements\.define\s*\(/.test(code)) {
+    throw new Error('widget code must not call customElements.define(): Cockpit can evaluate an HTML widget module more than once. Export a LitElement class as default instead.')
+  }
+  if (/\bthis\.attachShadow\s*\(/.test(code)) {
+    throw new Error('widget code must not call this.attachShadow(): LitElement already creates a shadow root. Use this.renderRoot to create or query DOM nodes instead.')
+  }
+  if (!/export\s+default\s+class(?:\s+\w+)?\s+extends\s+LitElement\b/.test(code)) {
+    throw new Error('widget code must be a Cumulocity Advanced-mode module that exports a class extending LitElement as default.')
+  }
+}
+
 export async function addWidgetToDashboard(creds: Creds, dashboardId: string, opts: AddWidgetOptions): Promise<{ widgetId: string }> {
+  assertAdvancedWidgetModule(opts.code)
   const mo = await getManagedObject(creds, dashboardId)
   const dashboard = mo.c8y_Dashboard
   if (!dashboard) throw new Error(`managed object ${dashboardId} has no c8y_Dashboard fragment - is this a dashboard id?`)
@@ -71,14 +95,13 @@ export async function addWidgetToDashboard(creds: Creds, dashboardId: string, op
     ...(dashboard.children ?? {}),
     [widgetId]: {
       id: widgetId,
-      x: opts.x ?? 0,
-      y: opts.y ?? 0,
-      width: opts.width ?? 4,
-      height: opts.height ?? 4,
-      config: {
-        ...WIDGET_CONFIG_SHAPE.buildConfig(opts.title, opts.code),
-        componentId: WIDGET_CONFIG_SHAPE.componentId,
-      },
+      componentId: WIDGET_CONFIG_SHAPE.componentId,
+      title: opts.title,
+      _x: opts.x ?? 0,
+      _y: opts.y ?? 0,
+      _width: opts.width ?? 4,
+      _height: opts.height ?? 4,
+      config: WIDGET_CONFIG_SHAPE.buildConfig(opts.code),
     },
   }
 
