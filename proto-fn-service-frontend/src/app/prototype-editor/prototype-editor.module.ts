@@ -2,9 +2,9 @@ import { EnvironmentInjector, Injectable, NgModule } from "@angular/core";
 import {
   DynamicWidgetDefinition,
   ExtensionFactory,
-  gettext,
   hookWidget,
 } from "@c8y/ngx-components";
+import { gettext } from "@c8y/ngx-components/gettext";
 
 import { PrototypeEditorComponent } from "./prototype-editor.component";
 

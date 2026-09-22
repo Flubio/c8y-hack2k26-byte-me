@@ -1,34 +1,98 @@
-<div class="prototype-editor-widget p-16">
-  <h4 class="m-t-0">AI Prototype Editor</h4>
-  <p class="text-muted">Create an AI-assisted prototype for a microservice.</p>
-  <button type="button" class="btn btn-primary" (click)="openEditor()">
-    Open editor
-  </button>
+<div class="prototype-editor-widget">
+  <img
+    class="byte-me-logo"
+    src="assets/byte-me-logo.png"
+    alt="Byte Me"
+  />
+  <div class="widget-copy">
+    <div class="eyebrow">
+      <span class="eyebrow-dot"></span> Prototype studio
+    </div>
+    <h4>Turn an idea into a service.</h4>
+    <p>
+      Describe what your microservice should do. AI will shape the first working
+      prototype for you.
+    </p>
+    <button type="button" class="editor-launch" (click)="openEditor()">
+      <span>Open prototype editor</span>
+      <span class="launch-arrow" aria-hidden="true">&rarr;</span>
+    </button>
+  </div>
+  <div class="widget-orbit" aria-hidden="true">
+    <div class="orbit-ring orbit-ring-large"></div>
+    <div class="orbit-ring orbit-ring-small"></div>
+    <div class="orbit-core"><span></span></div>
+  </div>
 </div>
 
 <dialog
   #editorDialog
-  class="modal-content p-16"
-  style="width: min(720px, 90vw)"
+  class="prototype-dialog"
+  (click)="handleDialogClick($event)"
 >
-  <div class="modal-header">
-    <h4 class="modal-title">Prototype Editor</h4>
-  </div>
-  <div class="modal-body p-0 p-t-16">
-    <label for="prototype-prompt" class="c8y-label">Prototype prompt</label>
-    <textarea
-      id="prototype-prompt"
-      class="form-control"
-      rows="12"
-      [(ngModel)]="prompt"
-      [disabled]="isSaving"
-      placeholder="Describe the microservice prototype you want to create..."
-    ></textarea>
-  </div>
-  <div class="modal-footer p-x-0 p-b-0">
+  <div class="dialog-header">
+    <div class="dialog-title-group">
+      <div class="dialog-mark" aria-hidden="true">✦</div>
+      <div>
+        <div class="eyebrow">AI-assisted workflow</div>
+        <h4>Prototype editor</h4>
+      </div>
+    </div>
     <button
       type="button"
-      class="btn btn-default"
+      class="dialog-close"
+      (click)="closeEditor()"
+      [disabled]="isSaving"
+      aria-label="Close editor"
+    >
+      &times;
+    </button>
+  </div>
+  <div class="dialog-body">
+    <div class="intro-copy">
+      <h5>What are we building?</h5>
+      <p>
+        Give the AI enough context to make a useful first version. You can
+        refine the result afterwards.
+      </p>
+    </div>
+    <label for="prototype-prompt" class="prompt-label"
+      >Your brief <span>required</span></label
+    >
+    <textarea
+      id="prototype-prompt"
+      class="prompt-input"
+      rows="7"
+      [(ngModel)]="prompt"
+      [disabled]="isSaving"
+      maxlength="2000"
+      placeholder="e.g. Create a service that checks device connectivity every 15 minutes and exposes the latest status..."
+    ></textarea>
+    <div class="prompt-meta">
+      <span>Be specific about inputs, outputs and desired behavior.</span>
+      <span>{{ prompt.length }}/2000</span>
+    </div>
+    <div class="suggestions">
+      <span class="suggestions-label">Need a starting point?</span>
+      <button
+        *ngFor="let suggestion of promptSuggestions"
+        type="button"
+        class="suggestion-chip"
+        (click)="useSuggestion(suggestion)"
+        [disabled]="isSaving"
+      >
+        {{ suggestion }}
+      </button>
+    </div>
+  </div>
+  <div class="dialog-footer">
+    <span class="save-status" [class.is-active]="isSaving"
+      ><span class="status-dot"></span
+      >{{ isSaving ? "Creating your prototype..." : "Ready to create" }}</span
+    >
+    <button
+      type="button"
+      class="cancel-button"
       (click)="closeEditor()"
       [disabled]="isSaving"
     >
@@ -36,11 +100,12 @@
     </button>
     <button
       type="button"
-      class="btn btn-primary"
+      class="create-button"
       (click)="save()"
       [disabled]="!prompt.trim() || isSaving"
     >
-      {{ isSaving ? "Creating..." : "Create prototype" }}
+      <span>{{ isSaving ? "Creating..." : "Create prototype" }}</span>
+      <span aria-hidden="true">&rarr;</span>
     </button>
   </div>
 </dialog>
