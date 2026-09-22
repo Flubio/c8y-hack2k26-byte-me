@@ -2,6 +2,7 @@ import { Component, ElementRef, ViewChild } from "@angular/core";
 import { NgFor } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { AlertService } from "@c8y/ngx-components";
+import byteMeLogo from "../../assets/byte-me-logo.png";
 import { PrototypeEditorService } from "./prototype-editor.service";
 
 @Component({
@@ -12,6 +13,8 @@ import { PrototypeEditorService } from "./prototype-editor.service";
 })
 export class PrototypeEditorComponent {
   @ViewChild("editorDialog") editorDialog!: ElementRef<HTMLDialogElement>;
+
+  readonly byteMeLogo = byteMeLogo;
 
   prompt = "";
   isSaving = false;
