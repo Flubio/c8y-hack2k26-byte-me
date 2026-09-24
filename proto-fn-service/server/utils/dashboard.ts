@@ -89,8 +89,12 @@ function assertAdvancedWidgetModule(code: string): void {
 }
 
 export async function addWidgetToDashboard(creds: Creds, dashboardId: string, opts: AddWidgetOptions): Promise<{ widgetId: string }> {
-  if (opts.code === undefined && opts.componentId === undefined) {
-    throw new Error('addWidgetToDashboard needs either code (HTML widget) or componentId+config (clone an existing widget type)')
+  // exactly one mode - both would pair the clone's componentId with an HTML-widget config
+  if ((opts.code === undefined) === (opts.componentId === undefined)) {
+    throw new Error('addWidgetToDashboard needs either code (HTML widget) or componentId+config (clone an existing widget type), not both')
+  }
+  if (opts.componentId !== undefined && opts.config == null) {
+    throw new Error(`addWidgetToDashboard: cloning componentId '${opts.componentId}' needs its config (adapt the example from list_tenant_widgets)`)
   }
   if (opts.code !== undefined) assertAdvancedWidgetModule(opts.code)
 

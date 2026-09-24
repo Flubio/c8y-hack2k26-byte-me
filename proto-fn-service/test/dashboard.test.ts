@@ -110,3 +110,16 @@ test('rejects a call with neither code nor componentId', async () => {
     /needs either code.*or componentId\+config/,
   )
 })
+
+test('rejects code and componentId together, and a clone without config, before touching the dashboard', async (t) => {
+  const fetchMock = t.mock.method(globalThis, 'fetch', async () => new Response('{}', { status: 200 }))
+  await assert.rejects(
+    () => addWidgetToDashboard(creds, 'dash-1', { title: 't', code: validWidgetCode, componentId: 'Gauge widget', config: {} }),
+    /not both/,
+  )
+  await assert.rejects(
+    () => addWidgetToDashboard(creds, 'dash-1', { title: 't', componentId: 'Gauge widget' }),
+    /needs its config/,
+  )
+  assert.equal(fetchMock.mock.callCount(), 0)
+})
