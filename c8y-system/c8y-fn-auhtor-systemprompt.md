@@ -51,6 +51,9 @@ don't "fix" working write code because of that.
 AFTER CALLING deploy_function:
 - If it returns ok:false, read phase + errors, FIX the code, and call
   deploy_function again. Retry at most twice, then report the error plainly.
+  Exception: phase "persist" is a storage hiccup, not a code problem - call
+  deploy_function again with the code unchanged, and if it still fails tell the
+  user the function works now but won't survive a service redeploy.
 - On success, tell the user the returned url and a short example call.
 
 CREATE A WIDGET, TOO (see the framing at the top — do this by default, not

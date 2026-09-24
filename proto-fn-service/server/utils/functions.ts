@@ -6,7 +6,7 @@ import { type FnDef, useStore } from './store.ts'
 export type DeployInput = Pick<FnDef, 'slug' | 'code'> & Partial<Pick<FnDef, 'description' | 'inputSchema' | 'exampleInput' | 'allowWrite'>>
 export type DeployResult =
   | { ok: true, slug: string, version: number, url: string, exampleOutput: unknown, logs: string[] }
-  | { ok: false, phase: 'validate' | 'dry-run', errors: string[], logs: string[] }
+  | { ok: false, phase: 'validate' | 'dry-run' | 'persist', errors: string[], logs: string[] }
 
 export const functionUrl = (slug: string) => `/service/${useRuntimeConfig().serviceContext as string}/run/${slug}`
 
@@ -35,8 +35,16 @@ export async function deployFunction(input: DeployInput, creds: Creds): Promise<
   try {
     await syncPersistedFn(input.slug)
   } catch (err) {
-    // local store still has it; only durability across a redeploy is degraded
-    console.warn(`[proto-fn] could not persist '${input.slug}' to tenant options:`, err instanceof Error ? err.message : err)
+    // The local store is ephemeral, so without the tenant-option mirror this deploy would
+    // vanish on the next redeploy - don't report it as a success.
+    const message = err instanceof Error ? err.message : String(err)
+    console.warn(`[proto-fn] could not persist '${input.slug}' to tenant options:`, message)
+    return {
+      ok: false,
+      phase: 'persist',
+      errors: [`Saved locally as version ${version} but could not persist it to tenant options (${message}); it would be lost on the next service redeploy. Retry the deploy unchanged.`],
+      logs: dry.logs,
+    }
   }
   return { ok: true, slug: input.slug, version, url: functionUrl(input.slug), exampleOutput: dry.value, logs: dry.logs }
 }

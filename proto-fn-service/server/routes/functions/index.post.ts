@@ -7,6 +7,7 @@ export default defineHandler({
   middleware: [hasUserRequiredRole('ROLE_PROTO_FN_CREATE')],
   handler: async (event) => {
     const result = await deployFunction(await event.req.json() as DeployInput, credsFrom(event.req))
-    return Response.json(result, { status: result.ok ? 201 : 422 })
+    const status = result.ok ? 201 : result.phase === 'persist' ? 503 : 422
+    return Response.json(result, { status })
   },
 })
