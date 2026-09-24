@@ -1,4 +1,5 @@
 import { useDeployedTenantClient, useTenantOptions } from 'c8y-nitro/utils'
+import { serializePerKey } from './serializePerKey.ts'
 import { type FnDef, useStore } from './store.ts'
 
 // Tenant options are the platform's own tenant-scoped KV store: they survive a
@@ -9,14 +10,24 @@ async function ownOptions() {
   return useTenantOptions(await useDeployedTenantClient())
 }
 
-// ponytail: whole function as one tenant-option value, no size chunking — fine for
-// hackathon-sized scripts; add chunking if a deployed function body gets huge.
-export async function persistFn(fn: FnDef) {
-  await (await ownOptions()).option(KEY_PREFIX + fn.slug).set(JSON.stringify(fn))
-}
-
-export async function deletePersistedFn(slug: string) {
-  await (await ownOptions()).option(KEY_PREFIX + slug).delete()
+/**
+ * Makes the tenant option for `slug` match the local store *at write time*: set if the
+ * function exists, delete if it doesn't. Serialized per slug and never working from a
+ * snapshot, so racing deploys can't persist a stale version and a deploy racing a DELETE
+ * can't resurrect the function on the next boot - the last write always reflects the
+ * latest local state.
+ * ponytail: in-process queue - correct only with one replica (isolation PER_TENANT);
+ * needs a version compare-and-set on the option if the service ever scales out.
+ */
+export function syncPersistedFn(slug: string): Promise<void> {
+  return serializePerKey(slug, async () => {
+    const option = (await ownOptions()).option(KEY_PREFIX + slug)
+    const fn = useStore().get(slug)
+    // ponytail: whole function as one tenant-option value, no size chunking — fine for
+    // hackathon-sized scripts; add chunking if a deployed function body gets huge.
+    if (fn) await option.set(JSON.stringify(fn))
+    else await option.delete()
+  })
 }
 
 /** Refills the local store from tenant options; only fills slugs missing locally (fresh container after redeploy). */
