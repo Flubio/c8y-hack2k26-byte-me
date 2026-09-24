@@ -32,6 +32,22 @@ test('extracts widget instances from every dashboard, keeping componentId/title/
   })
 })
 
+test('pages through every dashboard until a short page', async (t) => {
+  const dash = (id: string) => ({ id, c8y_Dashboard: { children: { w: { componentId: `type-${id}` } } } })
+  const pages = [Array.from({ length: 2000 }, (_, i) => dash(`p1-${i}`)), [dash('p2-last')]]
+  const urls: string[] = []
+  t.mock.method(globalThis, 'fetch', async (url: string) => {
+    urls.push(url)
+    return new Response(JSON.stringify({ managedObjects: pages[urls.length - 1] ?? [] }), { status: 200 })
+  })
+
+  const widgets = await listTenantWidgets(creds)
+  assert.equal(urls.length, 2)
+  assert.match(urls[1]!, /currentPage=2/)
+  assert.equal(widgets.length, 2001)
+  assert.equal(widgets.at(-1)!.componentId, 'type-p2-last')
+})
+
 test('surfaces a non-2xx as an error', async (t) => {
   t.mock.method(globalThis, 'fetch', async () => new Response('nope', { status: 500 }))
   await assert.rejects(() => listTenantWidgets(creds), /HTTP 500/)

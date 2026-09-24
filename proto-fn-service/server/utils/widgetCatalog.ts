@@ -21,14 +21,20 @@ interface DashboardMO {
   c8y_Dashboard?: { name?: string, children?: Record<string, { componentId?: string, title?: string, config?: unknown }> }
 }
 
-// ponytail: single page, no pagination loop - a tenant's dashboard count is small enough
-// for a hackathon-scale prototype; page through with pageSize/currentPage if this ever misses widgets.
+const PAGE_SIZE = 2000 // inventory API maximum
+
+/** Pages through every dashboard - a short (or empty) page means there is no next one. */
 export async function listTenantWidgets(creds: Creds): Promise<TenantWidget[]> {
-  const res = await fetch(`${creds.baseUrl}/inventory/managedObjects?fragmentType=c8y_Dashboard&pageSize=200`, {
-    headers: { ...creds.headers, accept: 'application/json' },
-  })
-  if (!res.ok) throw new Error(`GET dashboards failed: HTTP ${res.status}`)
-  const { managedObjects } = await res.json() as { managedObjects: DashboardMO[] }
+  const managedObjects: DashboardMO[] = []
+  for (let page = 1; ; page++) {
+    const res = await fetch(`${creds.baseUrl}/inventory/managedObjects?fragmentType=c8y_Dashboard&pageSize=${PAGE_SIZE}&currentPage=${page}`, {
+      headers: { ...creds.headers, accept: 'application/json' },
+    })
+    if (!res.ok) throw new Error(`GET dashboards failed: HTTP ${res.status}`)
+    const batch = (await res.json() as { managedObjects: DashboardMO[] }).managedObjects
+    managedObjects.push(...batch)
+    if (batch.length < PAGE_SIZE) break
+  }
 
   return managedObjects.flatMap((mo) => {
     const children = mo.c8y_Dashboard?.children ?? {}
