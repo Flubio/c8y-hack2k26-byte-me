@@ -127,4 +127,4 @@ Built for the Cumulocity AIoT Hackathon. This project is built on [Cumulocity Io
 
 ## License
 
-No repository-level license has been declared yet.
+[MIT](./LICENSE)
