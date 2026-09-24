@@ -3,9 +3,9 @@ name: Build frontend
 on:
   push:
     branches: [main]
-    paths: ['proto-fn-service-frontend/**']
+    paths: ["proto-fn-service-frontend/**"]
   pull_request:
-    paths: ['proto-fn-service-frontend/**']
+    paths: ["proto-fn-service-frontend/**"]
   workflow_dispatch:
 
 defaults:
@@ -27,5 +27,5 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: prototype-editor-plugin
-          path: proto-fn-service-frontend/dist/prototype-editor-plugin.zip
+          path: proto-fn-service-frontend/dist/prototype-editor-plugin/*.zip
           if-no-files-found: error
