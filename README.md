@@ -16,7 +16,7 @@ Byte Me is a hackathon prototype for Cumulocity IoT. It combines an AI-enabled C
 
 | Directory | Purpose |
 | --- | --- |
-| `proto-fn-service/` | Cumulocity Nitro microservice that validates, stores, and runs agent-authored JavaScript/TypeScript function bodies in a QuickJS sandbox. It also exposes MCP tools for deployment and widget generation. |
+| `proto-fn-service/` | Cumulocity Nitro microservice that validates, stores, and runs agent-authored JavaScript function bodies in a QuickJS sandbox (no TypeScript: bodies are not transpiled). It also exposes MCP tools for deployment and widget generation. |
 | `proto-fn-service-frontend/` | Angular/Cumulocity Web SDK plugin providing the **Prototype Editor** Cockpit widget and chat experience. |
 | `c8y-system/` | System prompt for the `c8y-fn-author` agent. |
 
