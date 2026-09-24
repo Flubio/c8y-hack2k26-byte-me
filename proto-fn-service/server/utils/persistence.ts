@@ -1,4 +1,4 @@
-import { useDeployedTenantClient, useTenantOptions } from 'c8y-nitro/utils'
+import { useSubscribedTenantClients, useTenantOptions } from 'c8y-nitro/utils'
 import { serializePerKey } from './serializePerKey.ts'
 import { type FnDef, useStore } from './store.ts'
 
@@ -7,8 +7,18 @@ import { type FnDef, useStore } from './store.ts'
 const KEY_PREFIX = 'fn:'
 const PERSIST_ATTEMPTS = 3
 
+/**
+ * Tenant options of the tenant this instance serves - NOT the microservice owner.
+ * With PER_TENANT isolation the platform runs one instance (and so one SQLite store) per
+ * subscribed tenant and passes that tenant as C8Y_TENANT; useDeployedTenantClient() would
+ * always target C8Y_BOOTSTRAP_TENANT (the owner) and mix every tenant's functions there.
+ * Local dev has no C8Y_TENANT, but there the bootstrap tenant is the only tenant anyway.
+ */
 async function ownOptions() {
-  return useTenantOptions(await useDeployedTenantClient())
+  const tenant = process.env.C8Y_TENANT ?? process.env.C8Y_BOOTSTRAP_TENANT
+  const client = tenant ? (await useSubscribedTenantClients())[tenant] : undefined
+  if (!client) throw new Error(`no service-user credentials for tenant '${tenant}' - is it subscribed to this microservice?`)
+  return useTenantOptions(client)
 }
 
 /**

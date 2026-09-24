@@ -29,7 +29,7 @@ return { ... }   // any JSON-serializable value
 ```
 
 Limits: 5 s, 32 MB, 1 MB result, 50 `c8y` calls, 8 concurrent runs (`FN_TIMEOUT_MS`, `FN_MEMORY_MB`, `FN_MAX_WORKERS`).
-Functions are stored in SQLite (`FN_DB_PATH`, default `.data/functions.db`) for fast local reads, and mirrored into tenant options on every deploy/delete. The container filesystem is ephemeral on Cumulocity (a redeploy or reschedule wipes it), so on boot the service refills its SQLite store from tenant options — functions survive redeploys without needing to be re-uploaded. Requires `ROLE_OPTION_MANAGEMENT_ADMIN` on the microservice's own service user (granted via `requiredRoles` in the manifest).
+Functions are stored in SQLite (`FN_DB_PATH`, default `.data/functions.db`) for fast local reads, and mirrored into the calling tenant's own tenant options on every deploy/delete (each `PER_TENANT` instance uses `C8Y_TENANT`, never the owner tenant). The container filesystem is ephemeral on Cumulocity (a redeploy or reschedule wipes it), so on boot the service refills its SQLite store from tenant options — functions survive redeploys without needing to be re-uploaded. Requires `ROLE_OPTION_MANAGEMENT_ADMIN` on the microservice's own service user (granted via `requiredRoles` in the manifest).
 
 ## Develop
 
