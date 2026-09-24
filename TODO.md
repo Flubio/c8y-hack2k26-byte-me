@@ -1,1 +1,0 @@
-- the agent needs to be able to know what type of widgets there are available in the tenant and have a way to decide if it is smarter to build a custom html widget or use an existing widget and connect it to the data the services is producing.

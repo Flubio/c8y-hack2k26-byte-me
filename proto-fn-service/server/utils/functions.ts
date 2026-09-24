@@ -1,4 +1,5 @@
 import { useRuntimeConfig } from 'nitro/runtime-config'
+import { persistFn } from './persistence.ts'
 import { type Creds, execute } from './sandbox.ts'
 import { type FnDef, useStore } from './store.ts'
 
@@ -31,5 +32,11 @@ export async function deployFunction(input: DeployInput, creds: Creds): Promise<
     exampleOutput: dry.value,
     allowWrite,
   })
+  try {
+    await persistFn(useStore().get(input.slug)!)
+  } catch (err) {
+    // local store still has it; only durability across a redeploy is degraded
+    console.warn(`[proto-fn] could not persist '${input.slug}' to tenant options:`, err instanceof Error ? err.message : err)
+  }
   return { ok: true, slug: input.slug, version, url: functionUrl(input.slug), exampleOutput: dry.value, logs: dry.logs }
 }

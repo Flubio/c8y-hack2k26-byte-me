@@ -82,3 +82,31 @@ test('surfaces a non-2xx GET as an error', async (t) => {
   t.mock.method(globalThis, 'fetch', async () => new Response('nope', { status: 404 }))
   await assert.rejects(() => addWidgetToDashboard(creds, 'missing', { title: 't', code: validWidgetCode }), /HTTP 404/)
 })
+
+test('clones an existing widget type via componentId+config instead of an HTML widget', async (t) => {
+  const existingDashboard = { name: 'My dashboard', children: {} }
+  const calls: { method: string, body?: unknown }[] = []
+  t.mock.method(globalThis, 'fetch', async (_url: string, init?: RequestInit) => {
+    calls.push({ method: init?.method ?? 'GET', body: init?.body ? JSON.parse(init.body as string) : undefined })
+    if (!init?.method) return new Response(JSON.stringify({ id: 'dash-1', c8y_Dashboard: existingDashboard }), { status: 200 })
+    return new Response(JSON.stringify({ ok: true }), { status: 200 })
+  })
+
+  const { widgetId } = await addWidgetToDashboard(creds, 'dash-1', {
+    title: 'Speed',
+    componentId: 'Gauge widget',
+    config: { deviceId: '123', fragment: 'c8y_Speed' },
+  })
+
+  const putBody = calls[1]!.body as { c8y_Dashboard: { children: Record<string, unknown> } }
+  const added = putBody.c8y_Dashboard.children[widgetId] as { componentId: string, config: unknown }
+  assert.equal(added.componentId, 'Gauge widget')
+  assert.deepEqual(added.config, { deviceId: '123', fragment: 'c8y_Speed' })
+})
+
+test('rejects a call with neither code nor componentId', async () => {
+  await assert.rejects(
+    () => addWidgetToDashboard(creds, 'dash-1', { title: 't' }),
+    /needs either code.*or componentId\+config/,
+  )
+})

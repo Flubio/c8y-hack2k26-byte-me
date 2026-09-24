@@ -53,9 +53,20 @@ AFTER CALLING deploy_function:
 
 CREATE A WIDGET, TOO (see the framing at the top — do this by default, not
 only when explicitly asked):
-- Call generate_widget with the deployed slug to get a correct starting point.
-  Edit its code if a different visualization fits the data better than a raw
-  JSON dump (e.g. a chart or gauge instead of <pre>).
+- First call list_tenant_widgets to see what widget types are already used on
+  this tenant's dashboards. If one of them already fits the shape of the new
+  data (same kind of chart/gauge/table the user is asking for), prefer
+  reusing it: pass its componentId and an adapted copy of its example config
+  to add_widget_to_dashboard instead of building a custom one. This is what
+  keeps dashboards looking like one system instead of a pile of one-off
+  widgets — reuse over reinvention, every time a fit exists.
+- Only when nothing in that list fits, call generate_widget with the deployed
+  slug to get a correct custom-HTML starting point. Edit its code if a
+  different visualization fits the data better than a raw JSON dump (e.g. a
+  chart or gauge instead of <pre>). Keep using Cumulocity's own CSS custom
+  properties (var(--c8y-...), already used in the generated starting point)
+  for all colors/spacing instead of hardcoded values, so the custom widget
+  inherits the tenant's active theme/branding automatically.
 - If the user's message contains a "[Context: current Cockpit dashboard id =
   ...]" line, call add_widget_to_dashboard with that dashboard id, a title,
   and the (possibly edited) code. Tell the user it's been added to their

@@ -65,11 +65,15 @@ async function putFragment(creds: Creds, id: string, fragment: Record<string, un
 
 export interface AddWidgetOptions {
   title: string
-  code: string
   x?: number
   y?: number
   width?: number
   height?: number
+  /** Advanced-mode HTML widget source (mutually exclusive with componentId/config). */
+  code?: string
+  /** Clone an existing widget type (e.g. a builtin gauge/chart already used on the tenant's dashboards) with its own config, instead of an HTML widget. */
+  componentId?: string
+  config?: unknown
 }
 
 function assertAdvancedWidgetModule(code: string): void {
@@ -85,7 +89,11 @@ function assertAdvancedWidgetModule(code: string): void {
 }
 
 export async function addWidgetToDashboard(creds: Creds, dashboardId: string, opts: AddWidgetOptions): Promise<{ widgetId: string }> {
-  assertAdvancedWidgetModule(opts.code)
+  if (opts.code === undefined && opts.componentId === undefined) {
+    throw new Error('addWidgetToDashboard needs either code (HTML widget) or componentId+config (clone an existing widget type)')
+  }
+  if (opts.code !== undefined) assertAdvancedWidgetModule(opts.code)
+
   const mo = await getManagedObject(creds, dashboardId)
   const dashboard = mo.c8y_Dashboard
   if (!dashboard) throw new Error(`managed object ${dashboardId} has no c8y_Dashboard fragment - is this a dashboard id?`)
@@ -95,13 +103,13 @@ export async function addWidgetToDashboard(creds: Creds, dashboardId: string, op
     ...(dashboard.children ?? {}),
     [widgetId]: {
       id: widgetId,
-      componentId: WIDGET_CONFIG_SHAPE.componentId,
+      componentId: opts.componentId ?? WIDGET_CONFIG_SHAPE.componentId,
       title: opts.title,
       _x: opts.x ?? 0,
       _y: opts.y ?? 0,
       _width: opts.width ?? 4,
       _height: opts.height ?? 4,
-      config: WIDGET_CONFIG_SHAPE.buildConfig(opts.code),
+      config: opts.code !== undefined ? WIDGET_CONFIG_SHAPE.buildConfig(opts.code) : opts.config,
     },
   }
 
