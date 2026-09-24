@@ -25,7 +25,7 @@ export default {
         path: './src/app/prototype-editor/prototype-editor.module.ts',
         readmePath: './README.md',
         description:
-          'Adds the Prototype Editor to device pages in Cockpit and Device Management.',
+          'Adds the Prototype Editor widget to Cockpit dashboards: chat with an AI agent that builds data functions and adds widgets to the dashboard.',
       },
     ],
   },
@@ -38,7 +38,6 @@ export default {
       '@angular/core',
       '@angular/forms',
       '@angular/platform-browser',
-      '@angular/platform-browser-dynamic',
       '@angular/router',
       '@angular/upgrade',
       '@c8y/client',

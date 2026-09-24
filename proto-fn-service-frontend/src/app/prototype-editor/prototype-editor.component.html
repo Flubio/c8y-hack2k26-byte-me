@@ -1,6 +1,6 @@
 <div class="pfn-chat">
   <div class="pfn-header">
-    <img class="pfn-logo" [src]="byteMeLogo" alt="Byte Me" />
+    <span class="pfn-avatar pfn-avatar-lg"><img [src]="byteMeMark" alt="" /></span>
     <div>
       <div class="pfn-eyebrow"><span class="pfn-eyebrow-dot"></span> Prototype studio</div>
       <h4>Ask for a service</h4>
@@ -16,26 +16,61 @@
     </button>
   </div>
 
-  <div class="pfn-messages">
+  <div class="pfn-messages" aria-live="polite">
     <div *ngIf="messages.length === 0" class="pfn-empty">
-      Describe what your microservice should do, e.g. "Show the average temperature
-      per floor over the last 24 hours."
+      <p class="pfn-empty-title">What should we build?</p>
+      <p class="pfn-empty-text">
+        Describe the data you need. The agent writes a small function and can add a widget to this dashboard.
+      </p>
+      <div class="pfn-suggestions">
+        <button
+          type="button"
+          class="pfn-chip"
+          *ngFor="let suggestion of suggestions"
+          [disabled]="isSending"
+          (click)="useSuggestion(suggestion)"
+        >
+          {{ suggestion }}
+        </button>
+      </div>
     </div>
-    <div *ngFor="let message of messages" class="pfn-message" [class.is-user]="message.role === 'user'">
-      <div class="pfn-bubble" *ngIf="message.role === 'user'">{{ message.content }}</div>
-      <div class="pfn-bubble pfn-markdown" *ngIf="message.role !== 'user'" [innerHTML]="message.content | markdown"></div>
-    </div>
-    <div *ngIf="isSending" class="pfn-message">
-      <div class="pfn-bubble pfn-bubble-loading">Thinking&hellip;</div>
+    <ng-container *ngFor="let message of messages">
+      <div *ngIf="message.content" class="pfn-message" [class.is-user]="message.role === 'user'">
+        <span class="pfn-avatar" *ngIf="message.role !== 'user'"><img [src]="byteMeMark" alt="" /></span>
+        <div class="pfn-bubble" *ngIf="message.role === 'user'">{{ message.content }}</div>
+        <div class="pfn-bubble pfn-markdown" *ngIf="message.role !== 'user'" [innerHTML]="message.content | markdown"></div>
+      </div>
+    </ng-container>
+    <div *ngIf="isSending && (activeTool || !messages[messages.length - 1]?.content)" class="pfn-message">
+      <span class="pfn-avatar"><img [src]="byteMeMark" alt="" /></span>
+      <div class="pfn-bubble pfn-typing" aria-label="Agent is working">
+        <span></span><span></span><span></span>
+        <em *ngIf="activeTool">Running {{ activeTool }}&hellip;</em>
+      </div>
     </div>
   </div>
 
-  <div class="pfn-input-row">
-    <textarea class="form-control" rows="2" [(ngModel)]="chatInput" [disabled]="isSending" (keydown)="handleChatKeydown($event)" placeholder="Describe what your microservice should do..."></textarea>
-    <button type="button" class="btn btn-primary" (click)="sendChat()" [disabled]="!chatInput.trim() || isSending">
-      Send
+  <div class="pfn-composer">
+    <textarea
+      rows="2"
+      [(ngModel)]="chatInput"
+      [disabled]="isSending"
+      (keydown)="handleChatKeydown($event)"
+      placeholder="Describe what your service should do..."
+      aria-label="Message the agent"
+    ></textarea>
+    <button
+      type="button"
+      class="pfn-send"
+      (click)="sendChat()"
+      [disabled]="!chatInput.trim() || isSending"
+      title="Send (Enter)"
+      aria-label="Send"
+    >
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8h11M9 4l4 4-4 4" /></svg>
     </button>
   </div>
+  <div class="pfn-hint">Enter to send &middot; Shift+Enter for a new line</div>
 
   <!-- <button type="button" class="btn btn-default btn-sm pfn-widget-btn" (click)="openWidgetDialog()">
     Create Cockpit widget

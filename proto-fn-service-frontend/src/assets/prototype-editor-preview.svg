@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 260" font-family="Roboto, Helvetica, Arial, sans-serif">
+  <rect width="400" height="260" rx="8" fill="#f4f8f7"/>
+  <rect x=".5" y=".5" width="399" height="259" rx="8" fill="none" stroke="#dce5e9"/>
+
+  <!-- header -->
+  <circle cx="34" cy="34" r="18" fill="#dff2ef"/>
+  <g transform="translate(22 23) scale(.048)" fill="#17212b">
+    <path d="M17 150 77 90H250L412 275V440L377 465H42L17 440Z"/>
+    <rect x="102" y="248" width="28" height="92" rx="10" fill="#dff2ef"/>
+    <rect x="205" y="248" width="28" height="92" rx="10" fill="#dff2ef"/>
+    <rect x="365" y="22" width="61" height="62" rx="6"/>
+  </g>
+  <circle cx="63" cy="27" r="3" fill="#ec9a4b"/>
+  <text x="71" y="30" font-size="8.5" font-weight="700" letter-spacing="1" fill="#056b69">PROTOTYPE STUDIO</text>
+  <text x="60" y="46" font-size="13" font-weight="600" fill="#17212b">Ask for a service</text>
+
+  <!-- user bubble -->
+  <rect x="150" y="66" width="232" height="30" rx="12" fill="#0a8f8b"/>
+  <text x="163" y="85" font-size="10.5" fill="#fff">Chart the temperature per floor, last 24 h</text>
+
+  <!-- assistant bubble with chart -->
+  <rect x="18" y="106" width="250" height="92" rx="12" fill="#fff" stroke="#dce5e9"/>
+  <text x="31" y="125" font-size="10.5" fill="#17212b">Done - added a widget to this dashboard:</text>
+  <g fill="#0a8f8b">
+    <rect x="34" y="160" width="22" height="26" rx="2" opacity=".55"/>
+    <rect x="64" y="146" width="22" height="40" rx="2" opacity=".7"/>
+    <rect x="94" y="152" width="22" height="34" rx="2" opacity=".55"/>
+    <rect x="124" y="136" width="22" height="50" rx="2"/>
+    <rect x="154" y="144" width="22" height="42" rx="2" opacity=".7"/>
+  </g>
+  <rect x="188" y="136" width="66" height="50" rx="4" fill="#f4f8f7"/>
+  <text x="196" y="156" font-size="8" fill="#63727f">avg</text>
+  <text x="196" y="176" font-size="16" font-weight="600" fill="#17212b">21.4°</text>
+
+  <!-- input -->
+  <rect x="18" y="214" width="364" height="32" rx="10" fill="#fff" stroke="#dce5e9"/>
+  <text x="30" y="234" font-size="10.5" fill="#99a7ad">Describe what your service should do…</text>
+  <rect x="338" y="219" width="38" height="22" rx="7" fill="#0a8f8b"/>
+  <path d="M351 230h12m-4-4 4 4-4 4" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

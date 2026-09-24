@@ -2,8 +2,9 @@ import { Component, ElementRef, ViewChild } from "@angular/core";
 import { NgFor, NgIf } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { Router } from "@angular/router";
-import byteMeLogo from "../../assets/byte-me-logo.png";
-import { AlertService, ContextRouteService, ViewContext, getActivatedRoute } from "@c8y/ngx-components";
+import { InventoryService } from "@c8y/client";
+import byteMeMark from "../../assets/byte-me-mark.svg";
+import { AlertService, AppStateService, ContextRouteService, ViewContext, getActivatedRoute } from "@c8y/ngx-components";
 import { ChatMessage, FunctionMeta, PrototypeEditorService } from "./prototype-editor.service";
 import { MarkdownPipe } from "./markdown.pipe";
 
@@ -24,6 +25,8 @@ export class PrototypeEditorComponent {
   messages: ChatMessage[] = [];
   chatInput = "";
   isSending = false;
+  /** Tool the agent is currently running, shown under the streaming reply. */
+  activeTool = "";
 
   functions: FunctionMeta[] = [];
   isLoadingFunctions = false;
@@ -31,23 +34,37 @@ export class PrototypeEditorComponent {
   generatedWidget = "";
   isGeneratingWidget = false;
 
-  readonly byteMeLogo = byteMeLogo;
+  readonly byteMeMark = byteMeMark;
+  readonly suggestions = [
+    "Show the latest temperature for each device",
+    "Chart active alarms by severity for the last 7 days",
+    "List devices that haven't sent data in 24 hours",
+  ];
 
-  private readonly storageKey: string;
+  private readonly storageKey: string | null;
 
   constructor(
     private prototypeEditorService: PrototypeEditorService,
     private alertService: AlertService,
     private router: Router,
     private contextRouteService: ContextRouteService,
+    appState: AppStateService,
+    private inventoryService: InventoryService,
   ) {
-    // Scoped per dashboard (falling back to a generic key when no dashboard context
-    // resolves) so switching dashboards doesn't show a stale, unrelated conversation.
-    this.storageKey = `pfn-chat:${this.getDashboardId() ?? "default"}`;
+    // Scoped per tenant + user + dashboard: replies can contain tenant data, so another
+    // user signing into the same browser must never see this transcript. If the identity
+    // isn't resolved, don't persist at all rather than fall back to a shared key.
+    const tenant = appState.currentTenant.value?.name;
+    const user = appState.currentUser.value?.userName;
+    this.storageKey =
+      tenant && user ? `pfn-chat:${tenant}:${user}:${this.getDashboardId() ?? "default"}` : null;
     this.messages = this.loadMessages();
   }
 
   private loadMessages(): ChatMessage[] {
+    if (!this.storageKey) {
+      return [];
+    }
     try {
       const raw = localStorage.getItem(this.storageKey);
       const parsed: unknown = raw ? JSON.parse(raw) : [];
@@ -59,6 +76,9 @@ export class PrototypeEditorComponent {
   }
 
   private saveMessages() {
+    if (!this.storageKey) {
+      return;
+    }
     try {
       localStorage.setItem(this.storageKey, JSON.stringify(this.messages));
     } catch (error) {
@@ -68,11 +88,19 @@ export class PrototypeEditorComponent {
 
   clearChat() {
     this.messages = [];
+    if (!this.storageKey) {
+      return;
+    }
     try {
       localStorage.removeItem(this.storageKey);
     } catch (error) {
       console.error("Unable to clear persisted chat:", error);
     }
+  }
+
+  useSuggestion(suggestion: string) {
+    this.chatInput = suggestion;
+    this.sendChat();
   }
 
   handleChatKeydown(event: KeyboardEvent) {
@@ -121,6 +149,17 @@ export class PrototypeEditorComponent {
       });
   }
 
+  /** The dashboard is an inventory managed object; any widget write bumps its lastUpdated. */
+  private async getDashboardVersion(dashboardId: string): Promise<string | null> {
+    try {
+      const { data } = await this.inventoryService.detail(dashboardId);
+      return data.lastUpdated ?? null;
+    } catch (error) {
+      console.error("Unable to read dashboard version:", error);
+      return null;
+    }
+  }
+
   async sendChat() {
     const content = this.chatInput.trim();
     if (!content || this.isSending) {
@@ -150,24 +189,38 @@ export class PrototypeEditorComponent {
               : m,
           )
         : nonEmptyMessages;
-      const reply = await this.prototypeEditorService.sendChatMessage(wireMessages);
-      this.messages = [...this.messages, { role: "assistant" as const, content: reply.trim() || "(no reply text)" }].slice(
-        -MAX_STORED_MESSAGES,
-      );
-      // The agent may have just called add_widget_to_dashboard - re-resolve this dashboard's
-      // route in place so a newly added tile shows up without the user hitting F5.
-      if (dashboardId) {
-        this.reloadDashboardRoute();
+      const versionBefore = dashboardId ? await this.getDashboardVersion(dashboardId) : null;
+      // Streamed into a placeholder bubble that is mutated in place as chunks arrive.
+      const reply: ChatMessage = { role: "assistant", content: "" };
+      this.messages = [...this.messages, reply].slice(-MAX_STORED_MESSAGES);
+      const replyText = await this.prototypeEditorService.streamChatMessage(wireMessages, {
+        onText: (text) => {
+          reply.content = text;
+          this.activeTool = "";
+        },
+        onTool: (toolName) => (this.activeTool = toolName),
+      });
+      reply.content = replyText.trim() || "(no reply text)";
+      // The reply is text only, so we can't see whether add_widget_to_dashboard ran - but
+      // that tool PUTs the dashboard, so a changed lastUpdated is the signal. Re-resolve the
+      // route only then, instead of tearing down every widget after every chat turn.
+      if (dashboardId && versionBefore) {
+        const versionAfter = await this.getDashboardVersion(dashboardId);
+        if (versionAfter && versionAfter !== versionBefore) {
+          this.reloadDashboardRoute();
+        }
       }
     } catch (error) {
       console.error("Unable to reach the agent:", error);
       this.messages = [
-        ...this.messages,
+        // drop the streaming placeholder if nothing arrived before the failure
+        ...this.messages.filter((m) => m.role === "user" || m.content),
         { role: "assistant" as const, content: "Something went wrong reaching the agent. Please try again." },
       ].slice(-MAX_STORED_MESSAGES);
       this.alertService.danger("Unable to reach the agent.");
     } finally {
       this.isSending = false;
+      this.activeTool = "";
       this.saveMessages();
     }
   }

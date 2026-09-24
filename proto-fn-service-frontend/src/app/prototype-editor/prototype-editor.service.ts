@@ -43,14 +43,17 @@ export class PrototypeEditorService {
   }
 
   /**
-   * Sends the full conversation to the c8y-fn-author agent and returns its reply text.
-   * The agent's own response shape isn't verified against a live tenant yet - this
-   * defensively handles the shapes it plausibly returns and falls back to raw JSON.
+   * Sends the full conversation to the c8y-fn-author agent and streams the reply back.
+   * With `fullResponse=true` + `Accept: text/event-stream` the AI Agent Manager answers with
+   * SSE `data: {...}` events (https://cumulocity.com/docs/ai/rest-api/#streaming):
+   * `text-delta` chunks for the reply, `tool-*` events while the agent runs tools, `error`.
+   * Falls back to parsing a plain / JSON body if the server doesn't stream.
    */
-  async sendChatMessage(messages: ChatMessage[]): Promise<string> {
+  async streamChatMessage(messages: ChatMessage[], handlers: StreamHandlers): Promise<string> {
     const response = await this.fetchClient.fetch(`/service/ai/agent/text/c8y-fn-author`, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      params: { fullResponse: true },
+      headers: { "content-type": "application/json", accept: "text/event-stream" },
       body: JSON.stringify({ messages }),
     });
 
@@ -59,13 +62,62 @@ export class PrototypeEditorService {
     }
 
     const contentType = response.headers.get("content-type") ?? "";
-    if (!contentType.includes("json")) {
-      return response.text();
+    if (!contentType.includes("event-stream") || !response.body) {
+      const reply = contentType.includes("json") ? extractReply(await response.json()) : await response.text();
+      handlers.onText(reply);
+      return reply;
     }
 
-    const body = await response.json();
-    return extractReply(body);
+    let reply = "";
+    const handleEvent = (raw: string) => {
+      const data = raw
+        .split("\n")
+        .filter((line) => line.startsWith("data:"))
+        .map((line) => line.slice(5).trim())
+        .join("");
+      if (!data || data === "[DONE]") {
+        return;
+      }
+      const event = JSON.parse(data) as StreamEvent;
+      if (event.type === "text-delta" && typeof event.text === "string") {
+        reply += event.text;
+        handlers.onText(reply);
+      } else if (event.type.startsWith("tool-") && event.toolName) {
+        handlers.onTool?.(event.toolName);
+      } else if (event.type === "error") {
+        throw new Error(event.errorText ?? "Agent stream reported an error");
+      }
+    };
+
+    const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
+    let buffer = "";
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) {
+        break;
+      }
+      buffer += value.replace(/\r\n/g, "\n");
+      const events = buffer.split("\n\n");
+      buffer = events.pop() ?? "";
+      events.forEach(handleEvent);
+    }
+    handleEvent(buffer);
+    return reply;
   }
+}
+
+export interface StreamHandlers {
+  /** Called with the full reply text so far after every chunk. */
+  onText: (replySoFar: string) => void;
+  /** Called with a tool name whenever the agent starts / finishes a tool call. */
+  onTool?: (toolName: string) => void;
+}
+
+interface StreamEvent {
+  type: string;
+  text?: string;
+  toolName?: string;
+  errorText?: string;
 }
 
 function extractReply(body: unknown): string {

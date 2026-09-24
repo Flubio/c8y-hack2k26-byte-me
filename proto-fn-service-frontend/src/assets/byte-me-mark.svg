@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 480" fill="#17212b">
+  <mask id="bite">
+    <rect width="500" height="480" fill="#fff"/>
+    <path d="M250 80H412V275Z" fill="#000"/>
+    <circle cx="272" cy="112" r="34" fill="#000"/>
+    <circle cx="322" cy="175" r="38" fill="#000"/>
+    <circle cx="378" cy="238" r="36" fill="#000"/>
+  </mask>
+  <path mask="url(#bite)" d="M17 150 77 90H402V440L377 465H42L17 440Z"/>
+  <rect x="102" y="248" width="28" height="92" rx="10" fill="#fff"/>
+  <rect x="205" y="248" width="28" height="92" rx="10" fill="#fff"/>
+  <rect x="365" y="22" width="61" height="62" rx="6"/>
+  <rect x="442" y="88" width="41" height="41" rx="5"/>
+  <rect x="377" y="153" width="35" height="35" rx="4"/>
+</svg>
