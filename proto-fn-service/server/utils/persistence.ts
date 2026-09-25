@@ -4,7 +4,8 @@ import { type FnDef, useStore } from './store.ts'
 
 // Tenant options are the platform's own tenant-scoped KV store: they survive a
 // microservice redeploy, unlike the container filesystem the SQLite store lives on.
-const KEY_PREFIX = 'fn:'
+const KEY_PREFIX = 'proto-fn-service:fn:'
+const LEGACY_KEY_PREFIX = 'fn:'
 const PERSIST_ATTEMPTS = 3
 
 /**
@@ -35,12 +36,19 @@ export function syncPersistedFn(slug: string): Promise<void> {
   return serializePerKey(slug, async () => {
     for (let attempt = 1; ; attempt++) {
       try {
-        const option = (await ownOptions()).option(KEY_PREFIX + slug)
+        const options = await ownOptions()
+        const option = options.option(KEY_PREFIX + slug)
         const fn = useStore().get(slug) // re-read per attempt: never retry a stale snapshot
         // ponytail: whole function as one tenant-option value, no size chunking — fine for
         // hackathon-sized scripts; add chunking if a deployed function body gets huge.
-        if (fn) await option.set(JSON.stringify(fn))
-        else await option.delete()
+        if (fn) {
+          const serialized = JSON.stringify(fn)
+          await option.set(serialized)
+          await options.option(LEGACY_KEY_PREFIX + slug).delete().catch(() => undefined)
+        } else {
+          await option.delete()
+          await options.option(LEGACY_KEY_PREFIX + slug).delete().catch(() => undefined)
+        }
         return
       } catch (err) {
         if (attempt >= PERSIST_ATTEMPTS) throw err
@@ -58,14 +66,26 @@ export function syncPersistedFn(slug: string): Promise<void> {
 export async function hydrateStore() {
   const options = await ownOptions()
   const all = await options.list()
+  const migrated: Record<string, string> = {}
   const store = useStore()
   for (const { slug } of store.list()) {
     const key = KEY_PREFIX + slug
-    if (!Object.hasOwn(all, key)) {
-      await options.option(key).set(JSON.stringify(store.get(slug)))
+    if (!Object.hasOwn(all, key) && !Object.hasOwn(all, LEGACY_KEY_PREFIX + slug)) {
+      const serialized = JSON.stringify(store.get(slug))
+      await options.option(key).set(serialized)
+      migrated[key] = serialized
     }
   }
   for (const [key, value] of Object.entries(all)) {
+    if (!key.startsWith(LEGACY_KEY_PREFIX)) continue
+    const slug = key.slice(LEGACY_KEY_PREFIX.length)
+    const newKey = KEY_PREFIX + slug
+    if (!Object.hasOwn(all, newKey) && !Object.hasOwn(migrated, newKey)) {
+      await options.option(newKey).set(value)
+      migrated[newKey] = value
+    }
+  }
+  for (const [key, value] of Object.entries({ ...all, ...migrated })) {
     if (!key.startsWith(KEY_PREFIX)) continue
     store.restore(JSON.parse(value) as FnDef)
   }
