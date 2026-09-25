@@ -29,7 +29,7 @@ export default defineNitroConfig({
       roles: ['ROLE_PROTO_FN_CREATE'],
       // Own service user: needed to mirror deployed functions into tenant options,
       // which survive a redeploy (the container filesystem/SQLite store does not).
-      requiredRoles: ['ROLE_OPTION_MANAGEMENT_ADMIN'],
+      requiredRoles: ['ROLE_OPTION_MANAGEMENT_READ', 'ROLE_OPTION_MANAGEMENT_ADMIN'],
       // Sandboxed functions run with the caller's credentials, not the service user's.
       // one replica: the in-memory function store must not be split across instances
       isolation: 'PER_TENANT',
