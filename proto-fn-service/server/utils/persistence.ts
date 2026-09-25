@@ -50,10 +50,21 @@ export function syncPersistedFn(slug: string): Promise<void> {
   })
 }
 
-/** Refills the local store from tenant options; only fills slugs missing locally (fresh container after redeploy). */
+/**
+ * On the first boot after upgrading to tenant-option persistence, copy the old SQLite-only
+ * records to missing options before refilling the local store. Subsequent boots have an empty
+ * SQLite store after redeploy and only restore records from tenant options.
+ */
 export async function hydrateStore() {
-  const all = await (await ownOptions()).list()
+  const options = await ownOptions()
+  const all = await options.list()
   const store = useStore()
+  for (const { slug } of store.list()) {
+    const key = KEY_PREFIX + slug
+    if (!Object.hasOwn(all, key)) {
+      await options.option(key).set(JSON.stringify(store.get(slug)))
+    }
+  }
   for (const [key, value] of Object.entries(all)) {
     if (!key.startsWith(KEY_PREFIX)) continue
     store.restore(JSON.parse(value) as FnDef)
