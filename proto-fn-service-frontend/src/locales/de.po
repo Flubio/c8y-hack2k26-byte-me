@@ -6,5 +6,8 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-msgid "Module Federation widget"
-msgstr "Modul Federation Dingsbums"
+msgid "Prototype Editor"
+msgstr "Prototyp-Editor"
+
+msgid "Chat with an AI agent that builds data functions and adds widgets to this dashboard."
+msgstr "Chatte mit einem KI-Agenten, der Datenfunktionen erstellt und Widgets zu diesem Dashboard hinzufügt."

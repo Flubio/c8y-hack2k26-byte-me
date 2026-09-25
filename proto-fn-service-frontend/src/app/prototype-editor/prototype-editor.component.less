@@ -9,31 +9,40 @@
   --line: #dce5e9;
   --accent: #0a8f8b;
   --accent-dark: #056b69;
+  --accent-soft: #dff2ef;
+  --warm: #ec9a4b;
   --canvas: #f4f8f7;
 }
 
-// The always-visible chat that replaced the prompt-then-modal flow below.
-// Note: .prototype-editor-widget and the .prototype-dialog rules further down are the
-// old hero-card + single-shot prompt UI and are no longer referenced from the template;
-// left in place rather than deleted blind, since a teammate may still want that copy/art.
 .pfn-chat {
   display: flex;
   flex-direction: column;
   gap: 10px;
   height: 100%;
   padding: 16px;
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  background: var(--canvas);
+  border-radius: 6px;
+  background: linear-gradient(180deg, #fff 0%, var(--canvas) 120px);
   color: var(--ink);
   box-sizing: border-box;
 }
 
 .pfn-header { flex-shrink: 0; display: flex; align-items: center; gap: 10px; }
-.pfn-logo { width: 36px; height: auto; object-fit: contain; }
+.pfn-clear-btn { margin-left: auto; align-self: flex-start; color: var(--muted); }
 .pfn-eyebrow { color: var(--accent-dark); font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
-.pfn-eyebrow-dot { display: inline-block; width: 7px; height: 7px; margin: 0 6px 1px 0; border-radius: 50%; background: #ec9a4b; }
+.pfn-eyebrow-dot { display: inline-block; width: 7px; height: 7px; margin: 0 6px 1px 0; border-radius: 50%; background: var(--warm); box-shadow: 0 0 0 3px rgba(236, 154, 75, .18); }
 .pfn-chat h4 { margin: 2px 0 0; font-size: 16px; font-weight: 650; }
+
+.pfn-avatar {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  img { width: 62%; }
+}
+.pfn-avatar-lg { width: 40px; height: 40px; }
 
 .pfn-messages {
   flex: 1;
@@ -43,29 +52,62 @@
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   padding: 4px 2px;
 }
-.pfn-empty { color: var(--muted); font-size: 13px; }
-.pfn-message { display: flex; }
+
+.pfn-empty { margin: auto 0; text-align: center; }
+.pfn-empty-title { margin: 0 0 4px; font-size: 15px; font-weight: 650; }
+.pfn-empty-text { max-width: 380px; margin: 0 auto 12px; color: var(--muted); font-size: 13px; line-height: 1.45; }
+.pfn-suggestions { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.pfn-chip {
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--accent-dark);
+  font-size: 12px;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+  &:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-soft); }
+  &:disabled { opacity: .5; cursor: not-allowed; }
+}
+
+.pfn-message { display: flex; align-items: flex-end; gap: 8px; }
 .pfn-message.is-user { justify-content: flex-end; }
 .pfn-bubble {
   max-width: 85%;
   padding: 8px 12px;
-  border-radius: 10px;
+  border-radius: 12px 12px 12px 4px;
   background: #fff;
   border: 1px solid var(--line);
+  box-shadow: 0 1px 2px rgba(23, 33, 43, .04);
   font-size: 13px;
   line-height: 1.45;
   white-space: pre-wrap;
   word-break: break-word;
 }
-.pfn-message.is-user .pfn-bubble { background: var(--accent); border-color: var(--accent); color: #fff; }
-.pfn-bubble-loading { color: var(--muted); font-style: italic; }
+.pfn-message.is-user .pfn-bubble { border-radius: 12px 12px 4px 12px; background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.pfn-typing {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 14px;
+  span { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pfn-bounce 1.2s infinite ease-in-out; }
+  span:nth-child(2) { animation-delay: .15s; }
+  span:nth-child(3) { animation-delay: .3s; }
+  em { margin-left: 6px; color: var(--muted); font-size: 12px; }
+}
+@keyframes pfn-bounce {
+  0%, 60%, 100% { opacity: .3; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-3px); }
+}
 
 // Agent replies are rendered from markdown (see markdown.pipe.ts) via [innerHTML],
 // so style the HTML marked produces instead of relying on white-space:pre-wrap.
 .pfn-markdown {
+  white-space: normal;
   > :first-child { margin-top: 0; }
   > :last-child { margin-bottom: 0; }
   p, ul, ol { margin: 0 0 8px; }
@@ -76,87 +118,36 @@
   a { color: var(--accent-dark); }
 }
 
-.pfn-input-row { flex-shrink: 0; display: flex; gap: 8px; align-items: flex-end; }
-.pfn-input-row textarea { flex: 1; resize: vertical; }
+.pfn-composer {
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 6px 6px 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  transition: border-color .15s, box-shadow .15s;
+  &:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(10, 143, 139, .13); }
+  textarea { flex: 1; min-height: 36px; padding: 6px 0; border: 0; outline: 0; resize: none; background: transparent; color: inherit; font: inherit; font-size: 13px; line-height: 1.45; }
+}
+.pfn-send {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--accent);
+  cursor: pointer;
+  transition: background .15s;
+  svg { width: 16px; height: 16px; fill: none; stroke: #fff; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  &:hover:not(:disabled) { background: var(--accent-dark); }
+  &:disabled { opacity: .4; cursor: not-allowed; }
+}
+.pfn-hint { flex-shrink: 0; margin-top: -4px; color: var(--muted); font-size: 11px; text-align: right; }
 .pfn-widget-btn { flex-shrink: 0; align-self: flex-start; }
 
-.prototype-editor-widget {
-  position: relative;
-  display: flex;
-  min-height: 210px;
-  align-items: center;
-  justify-content: space-between;
-  overflow: hidden;
-  padding: 30px 38px;
-  border: 1px solid #d5e3e2;
-  border-radius: 4px;
-  background: linear-gradient(115deg, #f5fbfa 0%, #e8f4f1 62%, #d9ecea 100%);
-  color: var(--ink);
-}
-
-.byte-me-logo {
-  position: absolute;
-  top: 22px;
-  right: 28px;
-  z-index: 1;
-  width: 112px;
-  height: auto;
-  object-fit: contain;
-}
-
-.widget-copy { position: relative; z-index: 1; max-width: 570px; }
-.eyebrow { color: var(--accent-dark); font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
-.eyebrow-dot { display: inline-block; width: 7px; height: 7px; margin: 0 7px 1px 0; border-radius: 50%; background: #ec9a4b; box-shadow: 0 0 0 4px rgba(236,154,75,.16); }
-.prototype-editor-widget h4 { margin: 12px 0 8px; font-size: 28px; font-weight: 650; letter-spacing: 0; line-height: 1.12; }
-.prototype-editor-widget p { max-width: 500px; margin: 0 0 22px; color: var(--muted); font-size: 14px; line-height: 1.55; }
-.editor-launch, .create-button { display: inline-flex; align-items: center; justify-content: space-between; gap: 22px; border: 0; border-radius: 3px; background: var(--accent); color: #fff; cursor: pointer; font-weight: 650; transition: background .18s ease, transform .18s ease; }
-.editor-launch { padding: 12px 15px 12px 18px; font-size: 13px; }
-.editor-launch:hover, .create-button:hover:not(:disabled) { background: var(--accent-dark); transform: translateY(-1px); }
-.launch-arrow { font-size: 18px; line-height: 12px; }
-.widget-orbit { position: relative; width: 190px; height: 190px; margin-right: 15px; opacity: .9; }
-.orbit-ring { position: absolute; inset: 50%; border: 1px solid rgba(10,143,139,.3); border-radius: 50%; transform: translate(-50%, -50%) rotate(-24deg); }
-.orbit-ring-large { width: 180px; height: 70px; }
-.orbit-ring-small { width: 130px; height: 130px; transform: translate(-50%, -50%) rotate(38deg); }
-.orbit-core { position: absolute; top: 50%; left: 50%; display: grid; width: 62px; height: 62px; place-items: center; border: 1px solid rgba(10,143,139,.5); border-radius: 50%; background: rgba(255,255,255,.7); transform: translate(-50%, -50%); }
-.orbit-core span { width: 19px; height: 19px; border-radius: 50%; background: #ec9a4b; box-shadow: 0 0 0 9px rgba(236,154,75,.13); }
-
-.prototype-dialog { width: min(720px, calc(100% - 32px)); padding: 0; border: 0; border-radius: 5px; color: var(--ink); box-shadow: 0 24px 80px rgba(23,33,43,.22); }
-.prototype-dialog::backdrop { background: rgba(16, 34, 42, .48); backdrop-filter: blur(3px); }
-.dialog-header { display: flex; align-items: flex-start; justify-content: space-between; padding: 25px 30px 22px; border-bottom: 1px solid var(--line); background: #fbfdfd; }
-.dialog-title-group { display: flex; gap: 13px; align-items: center; }
-.dialog-mark { display: grid; width: 38px; height: 38px; place-items: center; border-radius: 50%; background: #dff2ef; color: var(--accent-dark); font-size: 20px; }
-.dialog-header h4 { margin: 4px 0 0; font-size: 22px; font-weight: 650; }
-.dialog-close { border: 0; background: transparent; color: #73818a; cursor: pointer; font-size: 27px; line-height: 1; }
-.dialog-body { padding: 27px 30px 24px; background: #fff; }
-.intro-copy h5 { margin: 0 0 6px; font-size: 17px; }
-.intro-copy p { max-width: 530px; margin: 0 0 23px; color: var(--muted); font-size: 13px; line-height: 1.5; }
-.prompt-label { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-size: 13px; font-weight: 700; }
-.prompt-label span { color: #85939b; font-size: 11px; font-weight: 500; }
-.prompt-input { display: block; width: 100%; box-sizing: border-box; min-height: 142px; padding: 14px 15px; resize: vertical; border: 1px solid #bfcfd2; border-radius: 3px; background: #fbfdfd; color: var(--ink); font: inherit; font-size: 14px; line-height: 1.55; outline: 0; transition: border-color .18s ease, box-shadow .18s ease; }
-.prompt-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(10,143,139,.13); }
-.prompt-input::placeholder { color: #99a7ad; }
-.prompt-meta { display: flex; justify-content: space-between; margin-top: 7px; color: #829098; font-size: 11px; }
-.suggestions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 22px; }
-.suggestions-label { width: 100%; color: #596972; font-size: 12px; font-weight: 650; }
-.suggestion-chip { padding: 8px 11px; border: 1px solid #d3e2e1; border-radius: 3px; background: #f4faf9; color: #306967; cursor: pointer; font: inherit; font-size: 11px; text-align: left; transition: background .18s ease, border-color .18s ease; }
-.suggestion-chip:hover:not(:disabled) { border-color: #8bc6c1; background: #e5f5f2; }
-.dialog-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 17px 30px 22px; border-top: 1px solid var(--line); background: #fbfdfd; }
-.save-status { color: #7b8a91; font-size: 12px; }
-.status-dot { display: inline-block; width: 7px; height: 7px; margin-right: 7px; border-radius: 50%; background: #9eb1b5; }
-.save-status.is-active { color: var(--accent-dark); }.save-status.is-active .status-dot { background: #ec9a4b; animation: pulse 1.2s infinite; }
-.cancel-button { border: 0; background: transparent; color: #50616a; cursor: pointer; font-size: 13px; }
-.cancel-button:disabled, .dialog-close:disabled { cursor: not-allowed; opacity: .5; }
-.create-button { min-width: 156px; padding: 11px 13px 11px 16px; font-size: 13px; }.create-button:disabled { cursor: not-allowed; opacity: .45; transform: none; }
-
-@keyframes pulse { 50% { box-shadow: 0 0 0 4px rgba(236,154,75,.18); } }
-
-@media (max-width: 560px) {
-  .prototype-editor-widget { min-height: 0; padding: 25px 22px; }
-  .byte-me-logo { top: 18px; right: 20px; width: 82px; }
-  .prototype-editor-widget h4 { font-size: 24px; }
-  .widget-orbit { position: absolute; right: -42px; bottom: -34px; width: 145px; height: 145px; opacity: .55; }
-  .orbit-ring-large { width: 140px; height: 55px; }.orbit-ring-small { width: 105px; height: 105px; }.orbit-core { width: 48px; height: 48px; }
-  .dialog-header, .dialog-body { padding-right: 20px; padding-left: 20px; }
-  .dialog-footer { align-items: stretch; flex-wrap: wrap; padding-right: 20px; padding-left: 20px; }
-  .save-status { order: 3; width: 100%; }.create-button { flex: 1; }.cancel-button { padding: 0 8px; }
+@media (prefers-reduced-motion: reduce) {
+  .pfn-typing span { animation: none; opacity: .6; }
 }

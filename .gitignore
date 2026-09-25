@@ -17,3 +17,4 @@ proto-fn-service/.env.local
 proto-fn-service/build
 proto-fn-service/.c8y
 proto-fn-service/*.zip
+proto-fn-service-frontend/.env*

@@ -63,6 +63,11 @@ export function createStore(path: string) {
   const list = db.prepare('SELECT * FROM functions ORDER BY slug')
   const get = db.prepare('SELECT * FROM functions WHERE slug = ?')
   const del = db.prepare('DELETE FROM functions WHERE slug = ?')
+  // only used to refill an empty container from tenant options; never clobbers a live row
+  const insertIfMissing = db.prepare(`
+    INSERT OR IGNORE INTO functions (slug, code, description, input_schema, example_input, example_output, allow_write, version, updated_at)
+    VALUES (:slug, :code, :description, :input_schema, :example_input, :example_output, :allow_write, :version, :updated_at)
+  `)
   // the version bump happens in SQL, so a redeploy of the same slug is atomic
   const upsert = db.prepare(`
     INSERT INTO functions (slug, code, description, input_schema, example_input, example_output, allow_write, version, updated_at)
@@ -99,6 +104,20 @@ export function createStore(path: string) {
         updated_at: new Date().toISOString(),
       }) as { version: number }
       return row.version
+    },
+    /** Insert a function exactly as given (incl. version/updatedAt) unless the slug already exists. */
+    restore: (fn: FnDef) => {
+      insertIfMissing.run({
+        slug: fn.slug,
+        code: fn.code,
+        description: fn.description ?? null,
+        input_schema: json(fn.inputSchema),
+        example_input: json(fn.exampleInput),
+        example_output: json(fn.exampleOutput),
+        allow_write: fn.allowWrite ? 1 : 0,
+        version: fn.version,
+        updated_at: fn.updatedAt,
+      })
     },
   }
 }
