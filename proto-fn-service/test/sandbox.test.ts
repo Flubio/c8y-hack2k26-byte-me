@@ -54,3 +54,9 @@ test('async host round trip, writes need allowWrite', async () => {
   const w = await go('return typeof c8y.post')
   assert.deepEqual(w.ok && w.value, 'undefined')
 })
+
+test('c8y call limit -> actionable error telling the agent to batch', async (t) => {
+  t.mock.method(globalThis, 'fetch', async () => new Response('{}', { status: 200 }))
+  const r = await go('for (let i = 0; i < 60; i++) await c8y.get(`/inventory/managedObjects/${i}`); return 1')
+  assert.ok(!r.ok && /more than 50 c8y calls.*pageSize/.test(r.error.message), JSON.stringify(r))
+})

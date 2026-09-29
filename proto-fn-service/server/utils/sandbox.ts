@@ -2,7 +2,7 @@
  * Runs agent-written TS/JS in the `run` QuickJS sandbox (https://github.com/vercel-labs/run).
  * No Nitro imports on purpose: this file is unit-tested with plain `node --test`.
  */
-import { getHostFunctionContext, run, RunConcurrencyError, RunError, RunTimeoutError, setMaxWorkers } from 'run'
+import { getHostFunctionContext, run, RunBridgeLimitError, RunConcurrencyError, RunError, RunTimeoutError, setMaxWorkers } from 'run'
 
 setMaxWorkers(Number(process.env.FN_MAX_WORKERS ?? 8))
 
@@ -15,6 +15,7 @@ export type ExecResult =
 const ALLOWED_PREFIXES = ['/inventory', '/measurement', '/alarm', '/event', '/operation', '/identity', '/user/currentUser', '/tenant/currentTenant']
 const BRIDGE_TIMEOUT_MS = 10_000
 const MAX_RESPONSE_BYTES = 1024 * 1024
+const MAX_C8Y_CALLS = Number(process.env.FN_MAX_C8Y_CALLS ?? 50)
 
 export function assertAllowedPath(p: unknown): asserts p is string {
   if (typeof p !== 'string' || !p.startsWith('/') || p.startsWith('//') || p.includes('\\')) throw new Error(`invalid path: ${String(p)}`)
@@ -83,7 +84,7 @@ export async function execute(code: string, input: unknown, opts: ExecOptions): 
       limits: {
         timeoutMs,
         memoryLimitBytes: Number(process.env.FN_MEMORY_MB ?? 32) * 1024 * 1024,
-        maxBridgeRequests: 50,
+        maxBridgeRequests: MAX_C8Y_CALLS,
         maxSourceBytes: 200 * 1024,
       },
     })
@@ -97,6 +98,11 @@ export async function execute(code: string, input: unknown, opts: ExecOptions): 
     const error = RunError.isInstance(err)
       ? { name: err.name, code: err.code, message: withLine(err.message, err.stack, 0) }
       : { name: (err as Error).name, message: (err as Error).message }
+    // the usual cause is one c8y.get per device/item - tell the agent how to fix it, not just that it failed
+    if (err instanceof RunBridgeLimitError) {
+      error.message = `Function made more than ${MAX_C8Y_CALLS} c8y calls. Don't call c8y once per device/item: `
+        + 'fetch whole lists in one call (pageSize up to 2000, filter by type/fragmentType/dateFrom/source) and group the result in code.'
+    }
     return { ok: false, status, error, logs: [], durationMs: Date.now() - t0 }
   }
 }

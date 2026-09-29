@@ -28,7 +28,7 @@ log(...)         // returned with dry-run and error results
 return { ... }   // any JSON-serializable value
 ```
 
-Limits: 5 s, 32 MB, 1 MB result, 50 `c8y` calls, 8 concurrent runs (`FN_TIMEOUT_MS`, `FN_MEMORY_MB`, `FN_MAX_WORKERS`).
+Limits: 5 s, 32 MB, 1 MB result, 50 `c8y` calls, 8 concurrent runs (`FN_TIMEOUT_MS`, `FN_MEMORY_MB`, `FN_MAX_C8Y_CALLS`, `FN_MAX_WORKERS`).
 Functions are stored in SQLite (`FN_DB_PATH`, default `.data/functions.db`) for fast local reads, and mirrored into the calling tenant's own tenant options on every deploy/delete (each `PER_TENANT` instance uses `C8Y_TENANT`, never the owner tenant). The container filesystem is ephemeral on Cumulocity (a redeploy or reschedule wipes it), so on boot the service refills its SQLite store from tenant options — functions survive redeploys without needing to be re-uploaded. Requires `ROLE_OPTION_MANAGEMENT_ADMIN` on the microservice's own service user (granted via `requiredRoles` in the manifest).
 
 ## Develop
@@ -48,3 +48,46 @@ pnpm build             # (or `pnpm release` to bump first) needs a running Docke
 Upload the zip in Administration > Ecosystem > Extensions > Add extension package, then subscribe the tenant.
 Every upload needs a new version: `pnpm release` bumps the patch version and builds. Manifest: `PER_TENANT`, 1 replica, 1 CPU / 1 GiB,
 context path `proto-fn` (set in `nitro.config.ts`; also used for the URLs returned to the agent).
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as User
+    participant W as Widget (Cockpit)
+    participant AM as AI Agent Manager<br/>(LLM + system prompt)
+    participant S as edge-fn service<br/>(/service/edge-fn)
+    participant SB as QuickJS Sandbox
+    participant INV as Inventory<br/>(c8y_EdgeFunction)
+
+    rect rgb(230, 240, 255)
+    Note over U,INV: Phase 1 - Create function from text
+    U->>W: Describe function in plain text
+    W->>AM: POST /service/ai/agent/text/fn-author<br/>prompt + variables, SSE stream
+    AM->>AM: Write .mjs script following the ctx contract
+    AM->>S: MCP tool deploy_function(slug, code, inputSchema)<br/>user token forwarded
+    S->>SB: Dry-run with example input
+    SB-->>S: Result or error
+    alt dry-run failed
+        S-->>AM: error details
+        AM->>AM: Fix script and retry
+        AM->>S: deploy_function(fixed code)
+    end
+    S->>INV: Save source, JS, schema, version, owner
+    S-->>AM: url + version
+    AM-->>W: Created /service/edge-fn/run/slug (streamed)
+    W-->>U: Show URL and example call
+    end
+
+    rect rgb(230, 255, 235)
+    Note over U,INV: Phase 2 - Call the function
+    W->>S: GET or POST /service/edge-fn/run/slug<br/>caller credentials
+    S->>S: Check execute role and owner ACL
+    S->>INV: Load latest version (in-memory cache first)
+    S->>SB: Execute with ctx.input, ctx.c8y, ctx.log<br/>time, memory and output limits, no network
+    SB->>S: ctx.c8y request (host-side bridge, path allowlist)
+    S-->>SB: Platform response using caller identity
+    SB-->>S: JSON result
+    S-->>W: JSON result
+    end
+
+```
